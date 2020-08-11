@@ -13,9 +13,9 @@ using Xunit; // For Asserts
 
 namespace QuickInterface.DataFetchers
 {
-    internal class SearchPersonReturns 
+    internal class SearchPersonReturns
     {
-        public string ADUserGUID ;
+        public string ADUserGUID;
         public string ADUserLoginCd;
         public string UserNm;
         public string UserEmail;
@@ -41,55 +41,58 @@ namespace QuickInterface.DataFetchers
             Assert.NotNull(callingInterface);
 
             callingInterfaceWeWillSendMessagesBackTo = callingInterface;
-     
+
             SearchPersonReturns details = null;
             List<SearchPersonReturns> list = new List<SearchPersonReturns>(SOME_RANDOM_MINIMUM_INST_ALLOCS_SINCE_AT_LEAST_THESE_MANY);
             SPJobDef spJobDef = new SPJobDef("[Search].[Person]"); // Slow, gets detail from stack trace
             spJobDef.connStrUsed = CONN_STR;
-            using (var conn = new SqlConnection(CONN_STR))
+            using var conn = new SqlConnection(CONN_STR);
+            conn.InfoMessage += Conn_InfoMessageBackFromReader;
+            using var cmd = new SqlCommand(spJobDef.SPName, conn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            //command.Notification = SqlNotificationRequest; SqlDependency 
+
+
+            await conn.OpenAsync();
+
+            SqlCommandBuilder.DeriveParameters(cmd); // roundtrip! NEVER SEEN IN PRODUCTION! (Before now.)  Reduces dependency on argument name, though.  Worth it.
+
+            cmd.Parameters[1].Value = soughtIdentifier;
+
+            spJobDef.UTCStartedOn = DateTime.UtcNow;
+            var measureRunTime = new StopWatchExt();
+            // TODO: Multiple return sets
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                conn.InfoMessage += Conn_InfoMessageBackFromReader;
-                using (var cmd = new SqlCommand(spJobDef.SPName, conn)) // TODO: Pass in name.
+                if (callingInterface.GridFreshlyCreated == true)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    //command.Notification = SqlNotificationRequest; SqlDependency 
-                   
-
-                    await conn.OpenAsync();
-
-                    SqlCommandBuilder.DeriveParameters(cmd); // roundtrip! NEVER SEEN IN PRODUCTION! (Before now.)  Reduces dependency on argument name, though.  Worth it.
-
-                    cmd.Parameters[1].Value = soughtIdentifier;
-
-                    spJobDef.UTCStartedOn = DateTime.UtcNow;
-                    var measureRunTime = new StopWatchExt();
-                    // TODO: Multiple return sets
-                    using (var reader = await cmd.ExecuteReaderAsync())
-                    {
-                        if (await reader.ReadAsync())
-                        {
-                            var firstRowsReturnedAt = measureRunTime.Elapsed;
-                            // TODO: Use reflection to define and fill.
-                            details = new SearchPersonReturns();
-                            details.ADUserLoginCd = reader["ADUserLoginCd"].ToString();
-                            details.UserNm = reader["UserNm"].ToString();
-                            list.Add(details); // Stream? Yield?
-                        }
-                    }
-
-                    var finishedAt = measureRunTime.Elapsed;
-                    spJobDef.timeTilCompleteMilliseconds = finishedAt.TotalMilliseconds.ToInt64();
-                    spJobDef.UTCEndedOn = DateTime.UtcNow;  // Doh! UTC dates should be a type, not a separate value!  So setting a DateTime to a DateTimeUTC would error!
-                    spJobDef.SPReturnValue = cmd.Parameters[RETURN_VALUE_STANDARD_INDEX].Value.ToInt32();
-                    if (spJobDef.SPReturnValue == null)
-                    {
-                        throw new ArgumentNullException("I do not support stored procedures that do not return an integer where 1 = worked, 2=wasn't able to find, 3+ = error.");
-                    }
-                    spJobDef.rows = list.Count; // Is this right?  What if not a row returning SP?
-                    spJobDef.errorNo = NO_SQL_ERROR_RETURNED;
-                    
+                    callingInterface.AddColumnToGrid("User Login");
+                    callingInterface.AddColumnToGrid("User Name");
                 }
+                var firstRowsReturnedAt = measureRunTime.Elapsed;
+                // TODO: Use reflection to define and fill.
+                details = new SearchPersonReturns();
+                details.ADUserLoginCd = reader["ADUserLoginCd"].ToString();
+                details.UserNm = reader["UserNm"].ToString();
+                list.Add(details); // Stream? Yield?
+                callingInterface.SetCellAtRowColumn(details.ADUserLoginCd, FIRST_COLUMN_NO_IN_GRID);
+                callingInterface.SetCellAtRowColumn(details.UserNm, FIRST_COLUMN_NO_IN_GRID + 1); // Offset in case row headers. + 1 logically.  Or if a column is hidden, then physically the row number is off by one extra.
             }
+
+            var finishedAt = measureRunTime.Elapsed;
+            spJobDef.timeTilCompleteMilliseconds = finishedAt.TotalMilliseconds.ToInt64();
+            spJobDef.UTCEndedOn = DateTime.UtcNow;  // Doh! UTC dates should be a type, not a separate value!  So setting a DateTime to a DateTimeUTC would error!
+            spJobDef.SPReturnValue = cmd.Parameters[RETURN_VALUE_STANDARD_INDEX].Value.ToInt32();
+            if (spJobDef.SPReturnValue == null)
+            {
+                throw new ArgumentNullException("I do not support stored procedures that do not return a non-zero integer since that is the default return value, and there's no way of knowing the outcome.");
+            }
+            spJobDef.rows = list.Count; // Is this right?  What if not a row returning SP?
+            spJobDef.errorNo = NO_SQL_ERROR_RETURNED;
+
+
+
 
             return (list, spJobDef);
         }
@@ -99,7 +102,7 @@ namespace QuickInterface.DataFetchers
             // TODO: Write to main thread on calling form.
             var source = e.Source;
             var errors = e.Errors;
-            callingInterfaceWeWillSendMessagesBackTo.WriteToOutput(e.Message);
+            callingInterfaceWeWillSendMessagesBackTo.WriteToMessageOutput(e.Message);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace QuickInterface.UI_Views
             // TODO: list of last actions and outcomes?
         }
 
-        private async void fillInMissingDetails_Click(object sender, EventArgs e)
+            private async void fillInMissingDetails_Click(object sender, EventArgs e)
         {
             string soughtPersonsName = null;
 
@@ -48,8 +48,8 @@ namespace QuickInterface.UI_Views
 
             this.UseWaitCursor = true;
             // Tuples. Because a class defining a dataset's content is never populated with metadata, but we need the metadata at the same time!  For example, if it failed, timed out, couldn't connect, ran out of connections in the pool, no such SP, yada yada yada
-            (List<SearchPersonReturns> response, SPJobDef spReturns) = await new FetchSPReturns().RunSearchPersonRtnResults(soughtIdentifier: soughtPersonsName, callingInterface: new _WinformsCallingInterface(returnMessagesToThisForm: this, returnMessagesToThisControl: outTxtRunProcMessages));
-            responseFromQueryAsGrid.DataSource = response;
+            (List<SearchPersonReturns> response, SPJobDef spReturns) = await new FetchSPReturns().RunSearchPersonRtnResults(soughtIdentifier: soughtPersonsName, callingInterface: new _WinFormsCallingInterface(returnMessagesToThisForm: this, returnMessagesToThisControl: outTxtRunProcMessages, WriteSPRowsToThisGrid: responseFromQueryAsGrid));
+
             if (spReturns.errorNo == NO_SQL_ERROR_RETURNED)
             {
                 lastStatusMessage.Text = $"Ran successfully";
@@ -59,16 +59,16 @@ namespace QuickInterface.UI_Views
                     this.BackColor = Color.LightGreen;
                 } else if (spReturns.SPReturnValue == SP_FAILED_TO_FIND_WHAT_WAS_REQUESTED)
                 {
-                    lastStatusMessage.Text = $"Unable to find a match for '{ReceiverNamesSoughtOrFound}";
+                    lastStatusMessage.Text = $"Unable to find a match for '{soughtPersonsName}";
                     this.BackColor = Color.LightSalmon;
                 } else if (spReturns.SPReturnValue == SP_REACHED_UNREACHABLE_CODE)
                 {
-                    lastStatusMessage.Text = $"Unable to find a match for '{ReceiverNamesSoughtOrFound}";
+                    lastStatusMessage.Text = $"Unable to find a match for '{soughtPersonsName}";
                     this.BackColor = Color.LightSalmon;
                 }
                 else if (spReturns.SPReturnValue == SP_SUCCEEDED_RETURNED_POSSIBLE_OPTIONS)
                 {
-                    lastStatusMessage.Text = $"Found similar items that partially matched '{ReceiverNamesSoughtOrFound}";
+                    lastStatusMessage.Text = $"Found similar items that partially matched '{soughtPersonsName}";
                     this.BackColor = Color.LightGoldenrodYellow;
                 }
             }

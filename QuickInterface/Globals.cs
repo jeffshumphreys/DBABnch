@@ -24,5 +24,9 @@ namespace QuickInterface
         public const long CONVERSION_FROM_STRING_FAILED = long.MinValue + 1;  // Nice to know, right?
         public static DateTime HASNT_STARTED_YET = DateTime.MinValue.AddMilliseconds(1.0); // DETERMINISTIC?????
         public static DateTime HASNT_ENDED_YET = DateTime.MinValue.AddMilliseconds(2.0);
+        public const int I_DONT_KNOW_JUST_ADD_A_NEW_ROW_IF_FIRST_COLUMN_OTHERWISE_USE_LAST_ROW = -3;
+        public const int FIRST_COLUMN_NO_IN_GRID = 0;
+        public const int GRID_HAS_NO_ROWS_IN_IT = 0;
+        public const int ROW_INDEX_NOT_SET_YET = -2;
     }
 }

@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QuickInterface.Globals;
 
@@ -16,17 +11,22 @@ namespace QuickInterface
         [System.Runtime.InteropServices.DllImport("user32")]
         public static extern int GetCaretPos(ref Point lpPoint);
 
-        public static void AppendLine(this RichTextBox richTextBox, string message)
+        public static void AppendLine(this TextBoxBase textBox, string message)
         {
-            richTextBox.AppendLine(message, richTextBox.SelectionColor);
+            switch (textBox)
+            {
+                case RichTextBox richTextBox:
+
+                    richTextBox.AppendLine(message, richTextBox.SelectionColor);
+                    break;
+                default:
+                    textBox.AppendLine(message);
+                    break;
+            }
         }
-        /// <summary>
-        /// Always when adding a line of text, I need to make sure that 1) I am on a new line and 2) add a new line after.
-        /// If we do the old-fashioned programmer way of just alway \n at the beginning, we end up an unreadable mess of empty lines.
-        /// And hide the complexity of fonts, colors, etc.
-        /// </summary>
-        /// <param name="richTextBox"></param>
-        /// <param name="message"></param>
+        // Always when adding a line of text, I need to make sure that 1) I am on a new line and 2) add a new line after.
+        // If we do the old-fashioned programmer way of just alway \n at the beginning, we end up an unreadable mess of empty lines.
+        // And hide the complexity of fonts, colors, etc.
         public static void AppendLine(this RichTextBox richTextBox, string message, Color color)
         {
            if (richTextBox.CurrentColumn() > 0)

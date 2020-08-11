@@ -24,4 +24,31 @@ namespace QuickInterface
         }
 
     }
+
+    public class UnsupportedFeatureException : ArgumentException
+    {
+        public UnsupportedFeatureException(string message) : base(message)
+        {
+        }
+    }
+
+    public class UnsupportedFeatureExceptionButAGreatOppForADynamicFeature : ArgumentException
+    {
+        public UnsupportedFeatureExceptionButAGreatOppForADynamicFeature(string message) : base(message)
+        {
+        }
+    }
+
+    public class IncompatibleTypesException : ArgumentException
+    {
+        public IncompatibleTypesException(string message): base(message) { }
+    }
+    public class NotSupportingOtherTypesYetException : ArgumentException
+    {
+        public NotSupportingOtherTypesYetException(string message) : base(message) { }
+    }
+    public class DuplicateUIElementException : ArgumentException
+    {
+        public DuplicateUIElementException(string message) : base(message) { }
+    }
 }
